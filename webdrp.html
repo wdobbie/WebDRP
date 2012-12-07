@@ -4,18 +4,16 @@
 <head>
 	<title>WebDRP</title>
 	<style type="text/css">
-		html {
-			height: 100%;
-			width: 100%;
-		}
-
-		body {
+		html, body {
 			font-family: sans-serif;
-			background-color: #999;
+			background-color: #eee;
+			background: linear-gradient(to bottom, #eee 0%,#ddd 100%);
+			background: -webkit-linear-gradient(top,  #eee,#ddd 100%);
+
 			color: #444;
 			margin: 0px;
+			padding: 0px;
 			height: 100%;
-			width: 100%;
 		}
 
 		input[type=number] {
@@ -28,61 +26,74 @@
 			text-shadow: 0px 1px 1px #fff;
 		}
 
-		td.explanation {
+		.explanation {
 			font-style: italic;
 			font-size: small;
-			height: 1em;
 		}
 
 		#header {
-			text-shadow:0px 1px 1px #fff; 
-			background: linear-gradient(to bottom, #ddd 0%,#bbb 100%);
+			position: fixed;
+			top: 0px;
+			left: 0px;
+			width: 100%;
+			height: 40px;
+			text-shadow: 0px 1px 0px #fff; 
+			background: linear-gradient(to bottom, #eee 0%,#ccc 100%);
 			background: -webkit-linear-gradient(top,  #eee 0%,#ccc 100%);
 			border-bottom: solid #bbb 1px;
 			color: #444;
 			font-size: x-large;
 			font-weight: bold;
 			padding-left: 30px;
-			sheight: 30px;
+			margin: 0px;
 		}
 
-		#container {
-			height: 100%;
-			width: 100%;
-		}
 
-		#mainsvg {
-			width: 100%;
-			min-width: 100px;
-			min-height: 100px;
+		#mainpanel {
+			position: fixed;
+			left: 0px;
+			right: 400px;
+			bottom: 0px;
+			top: 40px;
+			margin: 0px;
+			padding: 30px;
+
 		}
 				
-		#contentrow {
-			height: 100%;
-		}	
 
-		.belowheader {
-			background: linear-gradient(to bottom, #eee 0%,#ddd 100%);
-			background: -webkit-linear-gradient(top,  #eee,#ddd 100%);
-			sborder-top: solid #ccc 1px;
-			padding: 30px;
-		}
-
-		#info {
+		#infopanel {
+			position: fixed;
+			right: 0px;
 			width: 400px;
-			height: 100%;
+			bottom: 0px;
+			top: 40px;
+			font-size: small;
+
 		}
 
 		svg {
-			box-shadow: 1px 1px 6px #333;
-			border: solid #888 0px;
-
-		}
+			box-shadow: 0px 1px 6px #666;
+	}
 
 		#histSvg {
 			height: 300px;
 			width: 300px;
 			background-color: white;
+		}
+
+		#svgDocument {
+			width: 100%;
+			height: 100%;
+			sborder: solid brown 5px;
+			background-color: #FCFCD9;			
+		}
+
+		#fileinfo {
+			margin-bottom: 30px;
+		}
+
+		#histpanel {
+			sdisplay: table-cell;
 		}
 
 	</style>
@@ -92,82 +103,70 @@
 <body>
 
 
-<table id=container border=0 cellpadding=10 cellspacing=0>
-	<tr>
-		<td colspan=2 id="header">WebDRP</td>
-	</tr>
 
-	<tr id=contentrow>
-		<td class="belowheader" id="mainsvg">
-			<svg id="svgDocument" version="1.1" xmlns="http://www.w3.org/2000/svg"
-				zoomAndPan="magnify" preserveAspectRatio="xMidYMid meet" style="height: 100%; width: 100%; background-color: #FCFCD9;">
-				<g id="controlGroup">
-					<rect id="boundRect" stroke="green" fill="rgba(0, 0, 0, 0.05)"></rect>
-				</g>
+<div id=header>
+	<table style="height: 100%"><tr><td>WebDRP</tr></td></table>
+</div>
 
-				</g>
-			</svg>
-		</td>
 
-		<td class="belowheader">
+<div id=mainpanel>
+	<svg id="svgDocument" version="1.1" xmlns="http://www.w3.org/2000/svg" zoomAndPan="magnify" preserveAspectRatio="xMidYMid meet">
+		<g id="controlGroup">
+			<rect id="boundRect" stroke="green" fill="rgba(0, 0, 0, 0.05)"></rect>
+		</g>
 
-			<table id="info" border=0 cellspacing=0>
-				<tr>
-					<td class="tableTitle">File:</td><td id="fileName"></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Size:</td><td id="fileSize"></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Last modified:</td><td id="fileLastModified">
-				</tr>
-				<tr>
-					<td colspan=2>&nbsp;</td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Top bound:</td><td><input step=1 oninput="boundFromInputs()" type="number" id="topBound"/></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Bottom bound:</td><td><input oninput="boundFromInputs()" type="number" id="bottomBound"/></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Left bound:</td><td><input oninput="boundFromInputs()" type="number" id="leftBound"/></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td>
-				</tr>
+	</svg>
+</div>
 
-				<tr>
-					<td colspan=2> &nbsp;</td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Bin width (&#181m):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td>
-				</tr>
-				<tr>
-					<td class="tableTitle">Cell count:</td><td id="cellCount"></td>
-				</tr>
-				<tr>
-					<td colspan=2> &nbsp;</td>
-				</tr>
 
-				<tr>
-					<td colspan=2>	
-							<svg id="histSvg" preserveAspectRatio="none">
-						</div>
-					</td>
-				</tr>
-				<tr>
-					<td colspan=2><input type="file" id="files" name="files"/></td>
-				</tr>
-				<tr>
-					<td colspan=2 class=explanation>(Or drag and drop a csv file anywhere on this window)</td>
-				</tr>
+<div id="infopanel">
+	<div style="margin: 30px">
+		<table id="fileinfo" border=0 cellspacing=0>
+			<tr>
+				<td class="tableTitle">File:</td><td id="fileName"></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Size:</td><td id="fileSize"></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Last modified:</td><td id="fileLastModified">
+			</tr>
+			<tr>
+				<td colspan=2>&nbsp;</td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Top bound:</td><td><input step=1 oninput="boundFromInputs()" type="number" id="topBound"/></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Bottom bound:</td><td><input oninput="boundFromInputs()" type="number" id="bottomBound"/></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Left bound:</td><td><input oninput="boundFromInputs()" type="number" id="leftBound"/></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td>
+			</tr>
 
-			</table>
-		</td>
-	</tr>
+			<tr>
+				<td colspan=2> &nbsp;</td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Bin width (&#181;):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td>
+			</tr>
+			<tr>
+				<td class="tableTitle">Cell count:</td><td id="cellCount"></td>
+			</tr>
+		</table>
 
-</table>
+		<div id=histpanel>
+			<svg id="histSvg" preserveAspectRatio="none"></svg>
+			<p><input type="file" id="files" name="files"/></p>
+			<p class=explanation>(Or drag and drop a csv file anywhere on this window)</p>
+		</div>
+
+	</div>
+
+</div>
 
 
 
@@ -194,6 +193,7 @@
 	var mouseSvgPoint = svgDocument.createSVGPoint();
 	var histSvg;
 
+
 	function downloadFile(url)
 	{
 		var req = new XMLHttpRequest();
@@ -211,8 +211,6 @@
 
 	function processFileContents()
 	{
-				
-
 		var rows = fileContents.match(/[^\r\n]+/g);
 		var columnNames = rows[0].match(/[^\s,]+/g)
 
@@ -329,12 +327,13 @@
 
 	function getSvgPoint(evt)
 	{
-		var crect = svgDocument.getClientRects()[0];
-		
+		var mainInvTransform = mainGroup.getCTM().inverse();
+		var mainCRect = svgDocument.getClientRects()[0];
+
 		if (true) {
-				mouseSvgPoint.x = evt.clientX - crect.left;
-				mouseSvgPoint.y = evt.clientY - crect.top;
-				mouseSvgPoint = mouseSvgPoint.matrixTransform(mainGroup.getCTM().inverse());
+				mouseSvgPoint.x = evt.clientX - mainCRect.left;
+				mouseSvgPoint.y = evt.clientY - mainCRect.top;
+				mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
 		} else {
 			mouseSsvgPoint.x = evt.screenX - crect.left;
 			mouseSsvgPoint.y = evt.screenY - crect.top;
@@ -358,22 +357,24 @@
 		};
 
 		svgDocument.addEventListener('mousemove', svgmove, true);
+		svgDocument.addEventListener('touchmove', svgmove, true);
 		svgmove(evt);
 	}
 
 	function svgup(evt) {
 		svgDocument.removeEventListener('mousemove', svgmove, true);
+		svgDocument.removeEventListener('touchmove', svgmove, true);
 		inputsFromBound();
 		calcHist();
 	}
 
 	function svgmove(evt) {
 		evt.preventDefault();
+		evt.stopPropagation();
 
 		var svgPoint = getSvgPoint(evt);
 
-		//console.log(svgPoint.x, svgPoint.y)
-
+		// prevent collapsing the selection rectangle
 		if (svgPoint.x < boundHorz[1-dragLines.horz] == dragLines.horz) {
 			svgPoint.x = boundHorz[1-dragLines.horz] + (dragLines.horz*2 -1);
 		}
@@ -545,8 +546,7 @@
 		svgDocument.setAttribute('viewBox', (minX-margin) + " " + (-margin-maxY)
 			 + " " + (maxX - minX + margin*2) + " " + (maxY - minY + margin*2));
 
-		//svgDocument.setAttribute('viewBox', (minX-margin) + " " + (minY-margin)
-		//	 + " " + (maxX - minX + margin*2) + " " + (maxY - minY + margin*2));
+
 
 		makeProxList();
 		inputsFromBound();
@@ -554,7 +554,9 @@
 	}
 
 	svgDocument.addEventListener('mousedown', svgdown);
+	svgDocument.addEventListener('touchstart', svgdown);
 	svgDocument.addEventListener('mouseup', svgup);
+	svgDocument.addEventListener('touchend', svgup);
 	document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
 	window.addEventListener('dragover', handleDragOver, false);
