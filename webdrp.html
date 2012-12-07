@@ -2,9 +2,11 @@
 <html>
 
 <head>
+	<title>WebDRP</title>
 	<style type="text/css">
 		html {
 			height: 100%;
+			width: 100%;
 		}
 
 		body {
@@ -13,6 +15,7 @@
 			color: #444;
 			margin: 0px;
 			height: 100%;
+			width: 100%;
 		}
 
 		input[type=number] {
@@ -22,7 +25,7 @@
 		td.tableTitle {
 			font-weight: bold;
 			width: 200px;
-			text-shadow: 0px 1px 1px #ccc;
+			text-shadow: 0px 1px 1px #fff;
 		}
 
 		td.explanation {
@@ -32,14 +35,14 @@
 		}
 
 		#header {
-			text-shadow:0px 1px 1px #ccc; 
+			text-shadow:0px 1px 1px #fff; 
 			background: linear-gradient(to bottom, #ddd 0%,#bbb 100%);
-			background: -webkit-linear-gradient(top,  #ddd 0%,#bbb 100%);
-			border-bottom: solid #888 1px;
+			background: -webkit-linear-gradient(top,  #eee 0%,#ccc 100%);
+			border-bottom: solid #bbb 1px;
 			color: #444;
 			font-size: x-large;
 			font-weight: bold;
-			padding-left: 10px;
+			padding-left: 30px;
 			sheight: 30px;
 		}
 
@@ -61,7 +64,7 @@
 		.belowheader {
 			background: linear-gradient(to bottom, #eee 0%,#ddd 100%);
 			background: -webkit-linear-gradient(top,  #eee,#ddd 100%);
-			border-top: solid #ccc 1px;
+			sborder-top: solid #ccc 1px;
 			padding: 30px;
 		}
 
@@ -157,7 +160,7 @@
 					<td colspan=2><input type="file" id="files" name="files"/></td>
 				</tr>
 				<tr>
-					<td colspan=2 class=explanation>(Or drag and drop a file anywhere on this window)</td>
+					<td colspan=2 class=explanation>(Or drag and drop a csv file anywhere on this window)</td>
 				</tr>
 
 			</table>
@@ -191,13 +194,24 @@
 	var mouseSvgPoint = svgDocument.createSVGPoint();
 	var histSvg;
 
-	function readFile(evt)
+	function downloadFile(url)
 	{
-		document.getElementById("fileName").innerText = currentFile.name;
-		document.getElementById("fileLastModified").innerText = currentFile.lastModifiedDate;
-		document.getElementById("fileSize").innerText = currentFile.size + " bytes";
+		var req = new XMLHttpRequest();
+		req.onreadystatechange = function() {
+			if (req.readyState == 4) {
+				fileContents = req.responseText;
+				document.getElementById("fileName").innerText = url;
+				document.getElementById("fileSize").innerText = fileContents.length + " bytes";
+				processFileContents();
+			}
+		}
+		req.open("GET", url, true);
+		req.send(null);
+	}
 
-		fileContents = evt.target.result;
+	function processFileContents()
+	{
+				
 
 		var rows = fileContents.match(/[^\r\n]+/g);
 		var columnNames = rows[0].match(/[^\s,]+/g)
@@ -219,6 +233,16 @@
 		}
 
 		plotDots();
+	}
+
+	function readFile(evt)
+	{
+		document.getElementById("fileName").innerText = currentFile.name;
+		document.getElementById("fileLastModified").innerText = currentFile.lastModifiedDate;
+		document.getElementById("fileSize").innerText = currentFile.size + " bytes";
+
+		fileContents = evt.target.result;
+		processFileContents()
 	}
 
 	function distance2(x1, y1, x2, y2) {
@@ -363,10 +387,6 @@
 		calcHist();
 	}
 
-	svgDocument.addEventListener('mousedown', svgdown);
-	svgDocument.addEventListener('mouseup', svgup);
-	svgDocument.addEventListener('mouseout', svgup);
-
 	function makeProxList()
 	{
 		var numPoints = table.x.length;
@@ -420,11 +440,6 @@
 		evt.stopPropagation();
 		evt.preventDefault();
 		evt.dataTransfer.dropEffect = 'copy';
-	}
-
-	function setCTM(element, matrix) {
-        var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
-        element.setAttribute("transform", s);
 	}
 
 	function createLine(x1, y1, x2, y2)
@@ -538,11 +553,15 @@
 		calcHist();
 	}
 
+	svgDocument.addEventListener('mousedown', svgdown);
+	svgDocument.addEventListener('mouseup', svgup);
 	document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
 	window.addEventListener('dragover', handleDragOver, false);
 	window.addEventListener('drop', handleFileDrop, false);
 
+	// FIXME: demo file
+	downloadFile("Cells.stf");
 
 </script>
 
