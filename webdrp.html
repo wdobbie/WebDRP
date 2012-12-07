@@ -9,7 +9,6 @@
 			background-color: #eee;
 			background: linear-gradient(to bottom, #eee 0%,#ddd 100%);
 			background: -webkit-linear-gradient(top,  #eee,#ddd 100%);
-
 			color: #444;
 			margin: 0px;
 			padding: 0px;
@@ -42,7 +41,7 @@
 			background: -webkit-linear-gradient(top,  #eee 0%,#ccc 100%);
 			border-bottom: solid #bbb 1px;
 			color: #444;
-			font-size: x-large;
+			font-size: 16px;
 			font-weight: bold;
 			padding-left: 30px;
 			margin: 0px;
@@ -84,7 +83,6 @@
 		#svgDocument {
 			width: 100%;
 			height: 100%;
-			sborder: solid brown 5px;
 			background-color: #FCFCD9;			
 		}
 
@@ -92,9 +90,6 @@
 			margin-bottom: 30px;
 		}
 
-		#histpanel {
-			sdisplay: table-cell;
-		}
 
 	</style>
 
@@ -122,40 +117,17 @@
 <div id="infopanel">
 	<div style="margin: 30px">
 		<table id="fileinfo" border=0 cellspacing=0>
-			<tr>
-				<td class="tableTitle">File:</td><td id="fileName"></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Size:</td><td id="fileSize"></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Last modified:</td><td id="fileLastModified">
-			</tr>
-			<tr>
-				<td colspan=2>&nbsp;</td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Top bound:</td><td><input step=1 oninput="boundFromInputs()" type="number" id="topBound"/></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Bottom bound:</td><td><input oninput="boundFromInputs()" type="number" id="bottomBound"/></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Left bound:</td><td><input oninput="boundFromInputs()" type="number" id="leftBound"/></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td>
-			</tr>
-
-			<tr>
-				<td colspan=2> &nbsp;</td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Bin width (&#181;):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td>
-			</tr>
-			<tr>
-				<td class="tableTitle">Cell count:</td><td id="cellCount"></td>
-			</tr>
+			<tr><td class="tableTitle">File:</td><td id="fileName"></td></tr>
+			<tr><td class="tableTitle">Size:</td><td id="fileSize"></td></tr>
+			<tr><td class="tableTitle">Last modified:</td><td id="fileLastModified"></tr>
+			<tr><td colspan=2>&nbsp;</td></tr>
+			<tr><td class="tableTitle">Top bound:</td><td><input step=1 oninput="boundFromInputs()" type="number" id="topBound"/></td></tr>
+			<tr><td class="tableTitle">Bottom bound:</td><td><input oninput="boundFromInputs()" type="number" id="bottomBound"/></td></tr>
+			<tr><td class="tableTitle">Left bound:</td><td><input oninput="boundFromInputs()" type="number" id="leftBound"/></td></tr>
+			<tr><td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td></tr>
+			<tr><td colspan=2> &nbsp;</td></tr>
+			<tr><td class="tableTitle">Bin width (&#181;):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td></tr>
+			<tr><td class="tableTitle">Cell count:</td><td id="cellCount"></td></tr>
 		</table>
 
 		<div id=histpanel>
@@ -165,9 +137,7 @@
 		</div>
 
 	</div>
-
 </div>
-
 
 
 
@@ -276,7 +246,7 @@
 			var bar = document.createElementNS(svgns, 'rect');
 			bar.setAttribute('x', i);
 			bar.setAttribute('y', 0);
-			bar.setAttribute('width', 1);
+			bar.setAttribute('width', 1.05);
 			bar.setAttribute('height', normHist[i]);
 			bar.setAttribute('fill', 'orange');
 			bar.setAttribute('stroke-width', 0);
@@ -325,20 +295,26 @@
 		updateHistSvg();
 	}
 
+	var mevt;
 	function getSvgPoint(evt)
 	{
-		var mainInvTransform = mainGroup.getCTM().inverse();
-		var mainCRect = svgDocument.getClientRects()[0];
+		mevt = evt;
+		//console.log(evt);
 
-		if (true) {
-				mouseSvgPoint.x = evt.clientX - mainCRect.left;
-				mouseSvgPoint.y = evt.clientY - mainCRect.top;
-				mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
-		} else {
-			mouseSsvgPoint.x = evt.screenX - crect.left;
-			mouseSsvgPoint.y = evt.screenY - crect.top;
-			mouseSsvgPoint = mouseSvgPoint.matrixTransform(mainGroup.getScreenCTM().inverse());
+		if (navigator.appName == "Microsoft Internet Explorer") {
+			// ie seems to handle getScreenCTM differently than chrome and firefox. Firefox's handling of getCTM seems dodgy though.
+			var crect = svgDocument.getClientRects()[0];
+			mouseSvgPoint.x = evt.clientX - crect.left;
+			mouseSvgPoint.y = evt.clientY - crect.top;
+			var mainInvTransform = mainGroup.getCTM().inverse();
+			mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
+		} else { 
+			mouseSvgPoint.x = evt.pageX;
+			mouseSvgPoint.y = evt.pageY;
+			var mainInvTransform = mainGroup.getScreenCTM().inverse();
+			mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
 		}
+
 		return mouseSvgPoint;
 	}
 
