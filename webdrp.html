@@ -23,6 +23,7 @@
 			font-weight: bold;
 			width: 200px;
 			text-shadow: 0px 1px 1px #fff;
+			vertical-align: top;
 		}
 
 		.explanation {
@@ -51,7 +52,7 @@
 		#mainpanel {
 			position: fixed;
 			left: 0px;
-			right: 400px;
+			right: 330px;
 			bottom: 0px;
 			top: 40px;
 			margin: 0px;
@@ -63,7 +64,7 @@
 		#infopanel {
 			position: fixed;
 			right: 0px;
-			width: 400px;
+			width: 330px;
 			bottom: 0px;
 			top: 40px;
 			font-size: small;
@@ -115,7 +116,7 @@
 
 
 <div id="infopanel">
-	<div style="margin: 30px">
+	<div style="margin-top: 30px">
 		<table id="fileinfo" border=0 cellspacing=0>
 			<tr><td class="tableTitle">File:</td><td id="fileName"></td></tr>
 			<tr><td class="tableTitle">Size:</td><td id="fileSize"></td></tr>
@@ -206,7 +207,7 @@
 	function readFile(evt)
 	{
 		document.getElementById("fileName").innerText = currentFile.name;
-		document.getElementById("fileLastModified").innerText = currentFile.lastModifiedDate;
+		document.getElementById("fileLastModified").innerText = new Date(currentFile.lastModifiedDate).toDateString();
 		document.getElementById("fileSize").innerText = currentFile.size + " bytes";
 
 		fileContents = evt.target.result;
@@ -463,25 +464,13 @@
 
 	function addCell(i)
 	{
-		if (true) {
-			var shape = document.createElementNS(svgns, "circle");
-			shape.setAttribute("cx", table.x[i]);
-			shape.setAttribute("cy", table.y[i]);
-			shape.setAttribute("r",  circleRadius);
-			shape.setAttribute("fill", "black");
-			svgCircles[i] = shape;
-			mainGroup.appendChild(shape);
-		} else {
-			var shape = document.createElementNS(svgns, "rect");
-			shape.setAttribute("x", table.x[i]-circleRadius);
-			shape.setAttribute("y", table.y[i]-circleRadius);
-			shape.setAttribute("width",  circleRadius*2);
-			shape.setAttribute("height",  circleRadius*2);
-			shape.setAttribute("fill", "black");
-			shape.setAttribute("stroke", 'rgba(0, 0, 0, 0)');
-			svgCircles[i] = shape;
-			mainGroup.appendChild(shape);			
-		}
+		var shape = document.createElementNS(svgns, "circle");
+		shape.setAttribute("cx", table.x[i]);
+		shape.setAttribute("cy", table.y[i]);
+		shape.setAttribute("r",  circleRadius);
+		shape.setAttribute("fill", "black");
+		svgCircles[i] = shape;
+		mainGroup.appendChild(shape);
 	}
 
 	function plotDots(evt)
