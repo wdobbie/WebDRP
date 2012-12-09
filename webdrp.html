@@ -29,6 +29,7 @@
 		.explanation {
 			font-style: italic;
 			font-size: small;
+			font-weight: normal;
 		}
 
 		#header {
@@ -37,9 +38,10 @@
 			left: 0px;
 			width: 100%;
 			height: 40px;
+			line-height: 40px;
 			text-shadow: 0px 1px 0px #fff; 
-			background: linear-gradient(to bottom, #eee 0%,#ccc 100%);
-			background: -webkit-linear-gradient(top,  #eee 0%,#ccc 100%);
+			background: linear-gradient(to bottom, #eee 0%,#ddd 100%);
+			background: -webkit-linear-gradient(top,  #eee 0%,#ddd 100%);
 			border-bottom: solid #bbb 1px;
 			color: #444;
 			font-size: 16px;
@@ -101,16 +103,22 @@
 
 
 <div id=header>
-	<table style="height: 100%"><tr><td>WebDRP</tr></td></table>
+	WebDRP <span class=explanation>- drag and drop a CSV file anywhere on this window</span>
+	<div style="float: right; margin-right: 50px;">
+		<input type="file" id="files" name="files"/>
+	</div>
 </div>
 
 
 <div id=mainpanel>
 	<svg id="svgDocument" version="1.1" xmlns="http://www.w3.org/2000/svg" zoomAndPan="magnify" preserveAspectRatio="xMidYMid meet">
-		<g id="controlGroup">
-			<rect id="boundRect" stroke="green" fill="rgba(0, 0, 0, 0.05)"></rect>
+		<g id="scaler">
+			<g id="translater">
+				<g id="controlGroup">
+					<rect id="boundRect" stroke="green" fill="rgba(0, 0, 0, 0.05)"></rect>
+				</g>
+			</g>
 		</g>
-
 	</svg>
 </div>
 
@@ -133,8 +141,6 @@
 
 		<div id=histpanel>
 			<svg id="histSvg" preserveAspectRatio="none"></svg>
-			<p><input type="file" id="files" name="files"/></p>
-			<p class=explanation>(Or drag and drop a csv file anywhere on this window)</p>
 		</div>
 
 	</div>
@@ -151,8 +157,10 @@
 	var svgns = "http://www.w3.org/2000/svg";
 	var circleRadius = 10;
 	var svgDocument = document.getElementById('svgDocument');
-	var mainGroup = svgDocument.getElementById('mainGroup');
+	var mainGroup;
 	var boundRect = svgDocument.getElementById('boundRect');
+	var scaler = svgDocument.getElementById('scaler');
+	var translater = svgDocument.getElementById('translater');
 	var minX, maxX, minY, maxY;
 	var leftLine, rightLine, topLine, bottomLine;
 	var proxCutoff = 200;
@@ -163,7 +171,9 @@
 	var boundVert, boundHorz;
 	var mouseSvgPoint = svgDocument.createSVGPoint();
 	var histSvg;
-
+	var zoom = 1;
+	var zoomFactor = 1.3;
+	var zoomPoint;
 
 	function downloadFile(url)
 	{
@@ -296,31 +306,32 @@
 		updateHistSvg();
 	}
 
-	var mevt;
 	function getSvgPoint(evt)
 	{
-		mevt = evt;
 		//console.log(evt);
+		var point = mouseSvgPoint;
 
 		if (navigator.appName == "Microsoft Internet Explorer") {
 			// ie seems to handle getScreenCTM differently than chrome and firefox. Firefox's handling of getCTM seems dodgy though.
 			var crect = svgDocument.getClientRects()[0];
-			mouseSvgPoint.x = evt.clientX - crect.left;
-			mouseSvgPoint.y = evt.clientY - crect.top;
-			var mainInvTransform = mainGroup.getCTM().inverse();
-			mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
+			point.x = evt.clientX - crect.left;
+			point.y = evt.clientY - crect.top;
+			var invTransform = translater.getCTM().inverse();
+			return point.matrixTransform(invTransform);
 		} else { 
-			mouseSvgPoint.x = evt.pageX;
-			mouseSvgPoint.y = evt.pageY;
-			var mainInvTransform = mainGroup.getScreenCTM().inverse();
-			mouseSvgPoint = mouseSvgPoint.matrixTransform(mainInvTransform);
+			point.x = evt.pageX;
+			point.y = evt.pageY;
+			var invTransform = translater.getScreenCTM().inverse();
+			return point.matrixTransform(invTransform);
 		}
 
-		return mouseSvgPoint;
+		return point;
 	}
 
 	function svgdown(evt) {
-		if (evt.button != 0) return;
+		if (evt.button) return;
+		evt.preventDefault();
+		evt.stopPropagation();
 		var svgPoint = getSvgPoint(evt);
 
 		var dleft = Math.abs(boundHorz[0] - svgPoint.x)
@@ -336,6 +347,7 @@
 		svgDocument.addEventListener('mousemove', svgmove, true);
 		svgDocument.addEventListener('touchmove', svgmove, true);
 		svgmove(evt);
+		return false;
 	}
 
 	function svgup(evt) {
@@ -363,6 +375,7 @@
 		boundVert[dragLines.vert] = svgPoint.y;
 		updateBoundRect();
 		calcHist();
+		return false;
 	}
 
 	function makeProxList()
@@ -475,10 +488,9 @@
 
 	function plotDots(evt)
 	{
-		if (mainGroup) svgDocument.removeChild(mainGroup);
+		if (mainGroup) translater.removeChild(mainGroup);
 		mainGroup = document.createElementNS(svgns, 'g');
-		svgDocument.appendChild(mainGroup);
-
+		translater.appendChild(mainGroup);
 
 		var numPoints = table.x.length;
 		document.getElementById("cellCount").innerText = numPoints;
@@ -505,8 +517,9 @@
 
 		var margin = (maxY - minY) * 0.05;
 
-		mainGroup.setAttribute("transform", "scale(1, -1)");
-		controlGroup.setAttribute("transform", "scale(1, -1)");
+		zoom = 1;
+		translater.removeAttribute("transform");
+		setZoom()
 
 		svgDocument.setAttribute('viewBox', (minX-margin) + " " + (-margin-maxY)
 			 + " " + (maxX - minX + margin*2) + " " + (maxY - minY + margin*2));
@@ -518,6 +531,30 @@
 		calcHist();
 	}
 
+	function setZoom() {
+		zoom = Math.max(1, zoom);
+		scaler.setAttribute("transform", "scale(" + zoom + ", -" + zoom + ")");
+	}
+
+	function zoomEvent(evt) {
+		zoomPoint = getSvgPoint(evt);
+		var amt = zoomFactor * evt.wheelDelta / 120;
+		if (amt > 0) {
+			zoom = zoom * amt;
+		} else {
+			zoom = zoom / -amt;
+		}
+		translater.setAttribute("transform", "");
+		setZoom();
+
+		if (zoom > 1.01) {
+			var newZoomPoint = getSvgPoint(evt);
+			var translate = "translate(" + (newZoomPoint.x - zoomPoint.x) + "," + (newZoomPoint.y - zoomPoint.y) + ")";
+			translater.setAttribute("transform", translate);
+		}
+	}
+
+	svgDocument.addEventListener('mousewheel', zoomEvent);
 	svgDocument.addEventListener('mousedown', svgdown);
 	svgDocument.addEventListener('touchstart', svgdown);
 	svgDocument.addEventListener('mouseup', svgup);
