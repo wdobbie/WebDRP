@@ -210,7 +210,7 @@
 		table = {}
 		for (var r in columnNames) {
 			columns[r] = new Array(rows.length - 1);
-			table[columnNames[r]] = columns[r];
+			table[columnNames[r].toLowerCase()] = columns[r];
 		}
 
 		for (var r=1; r<rows.length; r++) {
@@ -575,9 +575,18 @@
 		scaler.setAttribute("transform", "scale(" + zoom + ", -" + zoom + ")");
 	}
 
+	var mevt;
 	function zoomEvent(evt) {
+		mevt = evt;
 		zoomPoint = getSvgPoint(evt);
-		var amt = zoomFactor * evt.wheelDelta / 120;
+		var amt;
+		if (evt.wheelDelta) {
+			amt = evt.wheelDelta / 120;
+		} else if (evt.detail) { 		// firefox
+			amt = evt.detail / -3;
+		}
+		amt *= zoomFactor;
+
 		if (amt > 0) {
 			zoom = zoom * amt;
 		} else {
@@ -594,6 +603,7 @@
 	}
 
 	svgDocument.addEventListener('mousewheel', zoomEvent);
+	svgDocument.addEventListener('DOMMouseScroll', zoomEvent);		// firefox
 	svgDocument.addEventListener('mousedown', svgdown);
 	svgDocument.addEventListener('touchstart', svgdown);
 	svgDocument.addEventListener('mouseup', svgup);
