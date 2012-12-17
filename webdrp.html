@@ -24,7 +24,7 @@
 			font-weight: bold;
 			width: 200px;
 			text-shadow: 0px 1px 1px #fff;
-			vertical-align: top;
+			height: 1.5em;
 		}
 
 		.explanation {
@@ -89,6 +89,8 @@
 			height: 300px;
 			width: 300px;
 			background-color: white;
+			margin-top: 30px;
+			margin-bottom: 30px;
 		}
 
 		#svgDocument {
@@ -98,11 +100,6 @@
 			background-color: #FAFAE6;
 			background-color: white;
 		}
-
-		#fileinfo {
-			margin-bottom: 30px;
-		}
-
 
 	</style>
 
@@ -135,7 +132,7 @@
 
 <div id="infopanel">
 	<div style="margin-top: 30px">
-		<table id="fileinfo" border=0 cellspacing=0>
+		<table id="#fileinfo" border=0 cellspacing=0>
 			<tr><td class="tableTitle">File:</td><td id="fileName"></td></tr>
 			<tr><td class="tableTitle">Size:</td><td id="fileSize"></td></tr>
 			<tr><td class="tableTitle">Last modified:</td><td id="fileLastModified"></tr>
@@ -145,13 +142,25 @@
 			<tr><td class="tableTitle">Left bound:</td><td><input oninput="boundFromInputs()" type="number" id="leftBound"/></td></tr>
 			<tr><td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td></tr>
 			<tr><td colspan=2> &nbsp;</td></tr>
-			<tr><td class="tableTitle">Bin width (&#181;):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td></tr>
-			<tr><td class="tableTitle">Cell count:</td><td id="cellCount"></td></tr>
+			<tr><td class="tableTitle">Bin width (&#181;m):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td></tr>
 		</table>
 
 		<div id=histpanel>
-			<svg id="histSvg" preserveAspectRatio="none"></svg>
+			<svg id="histSvg" preserveAspectRatio="none">
+
+			</svg>
 		</div>
+
+		<table id="statstable" border=0 cellspacing=0>
+			<tr><td class="tableTitle">Sampling radius (&#181;m):</td><td id="proxCutoff"></td></tr>
+			<tr><td class="tableTitle">Cell count:</td><td id="cellCount"></td></tr>
+			<tr><td class="tableTitle">Mean density (mm<sup>-2</sup>):</td><td id="meanDensity"></td></tr>
+			<tr><td class="tableTitle">Effective radius (&#181;m):</td><td id="effectiveRadius"> </td></tr>
+			<tr><td class="tableTitle">Max radius (&#181;m):</td><td id="maxRadius"></td></tr>
+			<tr><td class="tableTitle">Packing factor:</td><td id="packingFactor"> </td></tr>
+			<tr><td class="tableTitle">Reliability factor:</td><td id="reliabilityFactor"> </td></tr>
+		</table>
+
 
 	</div>
 </div>
@@ -174,7 +183,7 @@
 	var minX, maxX, minY, maxY;
 	var leftLine, rightLine, topLine, bottomLine;
 	var proxCutoff = 200;
-	var proxList;
+	var proxList, distList;
 	var binWidth = 10;
 	var hist, normHist;
 	var dragLines;
@@ -186,14 +195,15 @@
 	var zoomPoint;
 	var boundDragPoint;
 
+
 	function downloadFile(url)
 	{
 		var req = new XMLHttpRequest();
 		req.onreadystatechange = function() {
 			if (req.readyState == 4) {
 				fileContents = req.responseText;
-				document.getElementById("fileName").innerText = url;
-				document.getElementById("fileSize").innerText = fileContents.length + " bytes";
+				document.getElementById("fileName").innerHTML = url;
+				document.getElementById("fileSize").innerHTML = fileContents.length + " bytes";
 				processFileContents();
 			}
 		}
@@ -227,9 +237,9 @@
 
 	function readFile(evt)
 	{
-		document.getElementById("fileName").innerText = currentFile.name;
-		document.getElementById("fileLastModified").innerText = new Date(currentFile.lastModifiedDate).toDateString();
-		document.getElementById("fileSize").innerText = currentFile.size + " bytes";
+		document.getElementById("fileName").innerHTML = currentFile.name;
+		document.getElementById("fileLastModified").innerHTML = new Date(currentFile.lastModifiedDate).toDateString();
+		document.getElementById("fileSize").innerHTML = currentFile.size + " bytes";
 
 		fileContents = evt.target.result;
 		processFileContents()
@@ -261,21 +271,55 @@
 		barGroup = document.createElementNS(svgns, 'g');
 		barGroup.id = 'barGroup';
 
+		var meanDensityRect = document.createElementNS(svgns, 'rect')
+		meanDensityRect.x.baseVal.value = 0;
+		meanDensityRect.y.baseVal.value = 0;
+		meanDensityRect.width.baseVal.value = 20;
+		meanDensityRect.height.baseVal.value = regionDensity* 1e6;
+		meanDensityRect.setAttribute('fill', 'rgba(255, 255, 60, 0.5)');
+		meanDensityRect.setAttribute('stroke', 'rgba(128, 128, 30, 0.8)');
+		meanDensityRect.setAttribute('stroke-width', 1);
+		meanDensityRect.setAttribute('vector-effect', "non-scaling-stroke");
+		barGroup.appendChild(meanDensityRect);
+
+		var effRadLine = document.createElementNS(svgns, 'line');
+		effRadLine.setAttribute('x1', effectiveRadius / binWidth);
+		effRadLine.setAttribute('x2', effectiveRadius / binWidth);
+		effRadLine.setAttribute('y1', 0);
+		effRadLine.setAttribute('y2', meanDensityRect.height.baseVal.value);
+		effRadLine.setAttribute('stroke', 'rgba(128, 128, 30, 0.8)')
+		effRadLine.setAttribute('stroke-width', 1)
+		effRadLine.setAttribute('vector-effect', "non-scaling-stroke");
+		barGroup.appendChild(effRadLine);
+
+
 		var numBins = normHist.length;
 		var maxBin = -1e20;
 		for (var i=0; i<numBins; i++) {
-			maxBin = Math.max(maxBin, normHist[i]);
+			var h = normHist[i] * 1e6;
+
+			maxBin = Math.max(maxBin, h);
 			var bar = document.createElementNS(svgns, 'rect');
 			bar.setAttribute('x', i);
 			bar.setAttribute('y', 0);
 			bar.setAttribute('width', 1.05);
-			bar.setAttribute('height', normHist[i]);
+			bar.setAttribute('height', h);
 			bar.setAttribute('fill', 'orange');
-			bar.setAttribute('stroke-width', 0);
+			bar.setAttribute('stroke', 'rgba(128, 70, 0, 0.8)');
+			bar.setAttribute('stroke-width', 0.5);
+			bar.setAttribute('vector-effect', "non-scaling-stroke");
+
 			barGroup.appendChild(bar);
 		}
+		maxBin = regionDensity * 1e6 * 1.5;
 
-		maxBin *= 1.2;
+		var maxRadiusMarker = document.createElementNS(svgns, 'path');
+		var pathData = 'M ' + (maxRadius/binWidth-0.5) + ' ' + (maxBin / 20) + ' l1 0 l-0.5 ' + (-maxBin/20) ;
+		maxRadiusMarker.setAttribute('d', pathData)
+		maxRadiusMarker.setAttribute('fill', 'rgba(0, 0, 0, 0.3)')
+		barGroup.appendChild(maxRadiusMarker);
+
+
 		barGroup.setAttribute("transform", "scale(1, -1)");
 		histSvg.appendChild(barGroup);
 		histSvg.setAttribute('viewBox', "0 " + (-maxBin) + " " + numBins + " " + maxBin);
@@ -284,7 +328,25 @@
 		binSlider.max = proxCutoff/2;
 		binSlider.min = 1;
 		binSlider.value = binWidth;
+
+		document.getElementById("proxCutoff").innerHTML = proxCutoff;
+		document.getElementById("cellCount").innerHTML = regionPoints;
+		document.getElementById("meanDensity").innerHTML = (regionDensity * 1e6).toFixed(2);		
+		document.getElementById("effectiveRadius").innerHTML = effectiveRadius.toFixed(2);
+		document.getElementById("maxRadius").innerHTML = maxRadius.toFixed(2);
+		document.getElementById("packingFactor").innerHTML = packingFactor.toFixed(2);
+		document.getElementById("reliabilityFactor").innerHTML = reliabilityFactor.toFixed(2);
+	
 	}
+
+	var regionDensity;
+	var regionArea;
+	var regionPoints;
+	var effectiveRadius;
+	var Ve;
+	var maxRadius = 0;
+	var packingFactor;
+	var reliabilityFactor;
 
 	function calcHist()
 	{
@@ -292,27 +354,67 @@
 		var numBins = Math.ceil(proxCutoff / binWidth);
 		if (!numBins) numBins = 1;
 
+
+
 		hist = new Array(numBins);
 		for (var i=0; i<numBins; i++) {
 			hist[i] = 0;
 		}
 
+		regionPoints = 0;
+
 		for (var point=0; point<numPoints; point++) {
 			if (!pointInBounds(point)) continue;
+			regionPoints++;
 
+			var dlist = distList[point];
 			var plist = proxList[point];
-			for (var rel=0; rel<plist.length; rel++) {
-				var bin = (plist[rel] / binWidth) | 0;
+			for (var rel=0; rel<dlist.length; rel++) {
+				if (!pointInBounds(plist[rel])) continue;
+				var radius = dlist[rel];
+				var bin = (radius / binWidth) | 0;
 				if (bin < numBins) {
 					hist[bin]++;
 				}
 			}
 		}
 
+		regionArea = (boundHorz[1] - boundHorz[0]) * (boundVert[1] - boundVert[0]);
+		regionDensity = regionPoints / regionArea;
+		maxRadius = Math.sqrt(Math.sqrt(4/3) / regionDensity);
+
+		var W = boundHorz[1] - boundHorz[0];
+		var L = boundVert[1] - boundVert[0];
+
+
 		normHist = new Array(numBins);
+		var hitMean = false;
+		Ve = 0;
 		for (var i=0; i<numBins; i++) {
-			normHist[i] = hist[i] / ((i+1)*binWidth);
+			var area = Math.PI * binWidth*binWidth * (2*i+1);
+			var r = (i+1) * binWidth;
+			var compFactor = 1 - (2*r) / (Math.PI * L * W) * (L + W) + (r*r) / (Math.PI * L * W);
+			//console.log('bin ', i, compFactor);
+
+			normHist[i] = hist[i] / area / regionPoints / compFactor;
+			//normHist[i] = hist[i] / ((i+1)*binWidth);
+
+			// add to Ve until we reach the first bin that exceeds the mean density
+			if (normHist[i] > regionDensity) hitMean = true;
+			if (!hitMean) {
+				var lambdai =  regionPoints * regionDensity * area;
+				Ve += lambdai - hist[i];
+			}
 		}
+		Ve /= regionPoints;
+
+		effectiveRadius = Math.sqrt(Ve / (Math.PI * regionDensity));
+
+		packingFactor = (effectiveRadius / maxRadius);
+		packingFactor *= packingFactor;
+		
+		var Dc = 1 / Math.sqrt(regionArea * Math.PI * binWidth * binWidth);
+		reliabilityFactor = regionDensity / Dc;
 
 		updateHistSvg();
 	}
@@ -342,12 +444,19 @@
 	function boundDrag(evt) {
 		var point = getSvgPoint(evt);
 		var w = boundHorz[1] - boundHorz[0];
-		boundHorz[0] = point.x - boundDragPoint.x;
+		boundHorz[0] = Math.max(minX, point.x - boundDragPoint.x);
 		boundHorz[1] = boundHorz[0] + w;
-
+		if (boundHorz[1] > maxX) {
+			boundHorz[1] = maxX;
+			boundHorz[0] = maxX - w;
+		}
 		var h = boundVert[1] - boundVert[0];
-		boundVert[0] = point.y - boundDragPoint.y;
+		boundVert[0] = Math.max(minY, point.y - boundDragPoint.y);
 		boundVert[1] = boundVert[0] + h;
+		if (boundVert[1] > maxY) {
+			boundVert[1] = maxY;
+			boundVert[0] = maxY - h;
+		}
 
 		updateBoundRect();
 		calcHist();
@@ -402,13 +511,13 @@
 		var svgPoint = getSvgPoint(evt);
 
 		// prevent collapsing the selection rectangle
-		if (svgPoint.x < boundHorz[1-dragLines.horz] == dragLines.horz) {
-			svgPoint.x = boundHorz[1-dragLines.horz] + (dragLines.horz*2 -1);
+		if ((svgPoint.x - proxCutoff * 2 * (dragLines.horz*2 -1)) < boundHorz[1-dragLines.horz] == dragLines.horz) {
+			svgPoint.x =  boundHorz[1-dragLines.horz] + proxCutoff * 2 * (dragLines.horz*2 -1);
 		}
 		boundHorz[dragLines.horz] = svgPoint.x;	
 
-		if (svgPoint.y < boundVert[1-dragLines.vert] == dragLines.vert) {
-			svgPoint.y = boundVert[1-dragLines.vert] + (dragLines.vert*2 -1);
+		if (svgPoint.y - proxCutoff * 2 * (dragLines.vert*2 -1)< boundVert[1-dragLines.vert] == dragLines.vert) {
+			svgPoint.y = boundVert[1-dragLines.vert] + proxCutoff * 2 * (dragLines.vert*2 -1);
 		}
 		boundVert[dragLines.vert] = svgPoint.y;
 		updateBoundRect();
@@ -420,13 +529,14 @@
 	{
 		var numPoints = table.x.length;
 		proxList = new Array(numPoints);
+		distList = new Array(numPoints);
 
 		for (var i=0; i<numPoints; i++) {
-			proxList[i] = [];
+			proxList[i] = new Array();
+			distList[i] = new Array();
 		}
 
-		var proxCutoff2 = 2*proxCutoff;
-		proxCutoff2 = proxCutoff2 * proxCutoff2;
+		var proxCutoff2 = proxCutoff * proxCutoff;
 
 		for (var a=0; a<numPoints; a++) {
 
@@ -440,9 +550,12 @@
 				var dist2 = distance2(xa, ya, xb, yb);
 				if (dist2 > proxCutoff2) continue;
 
+				proxList[a].push(b);
+				proxList[b].push(a);
+
 				var dist = Math.sqrt(dist2);
-				proxList[a].push(dist);
-				proxList[b].push(dist);
+				distList[a].push(dist);
+				distList[b].push(dist);
 			}
 		}
 	}
@@ -502,10 +615,10 @@
 
 	function updateBoundRect()
 	{
-		boundHorz[0] = Math.round(boundHorz[0]);
-		boundHorz[1] = Math.round(boundHorz[1]);
-		boundVert[0] = Math.round(boundVert[0]);
-		boundVert[1] = Math.round(boundVert[1]);
+		boundHorz[0] = Math.max(minX, Math.round(boundHorz[0]));
+		boundHorz[1] = Math.min(maxX, Math.round(boundHorz[1]));
+		boundVert[0] = Math.max(minY, Math.round(boundVert[0]));
+		boundVert[1] = Math.min(maxY, Math.round(boundVert[1]));
 
 		boundRect.x.baseVal.value = boundHorz[0];
 		boundRect.y.baseVal.value = boundVert[0];
@@ -532,7 +645,6 @@
 		translater.appendChild(mainGroup);
 
 		var numPoints = table.x.length;
-		document.getElementById("cellCount").innerText = numPoints;
 		svgCircles = new Array(numPoints);
 
 		minX = 1e20;
