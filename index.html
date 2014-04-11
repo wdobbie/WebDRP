@@ -143,6 +143,10 @@
 			<tr><td class="tableTitle">Right bound:</td><td><input oninput="boundFromInputs()" type="number" id="rightBound"/></td></tr>
 			<tr><td colspan=2> &nbsp;</td></tr>
 			<tr><td class="tableTitle">Bin width (&#181;m):</td><td><input id="binWidth" type="number" min="0.1" max="40" step="0.1" oninput="binsChanged()"></td></tr>
+		
+			<tr><td class="tableTitle">Sampling radius (&#181;m):</td><td><input id="samplingRadius" type="number" min="10" max="500" step="1" oninput="samplingRadiusChanged()"></td></tr>
+		
+
 		</table>
 
 		<div id=histpanel>
@@ -152,7 +156,10 @@
 		</div>
 
 		<table id="statstable" border=0 cellspacing=0>
+		<!--
 			<tr><td class="tableTitle">Sampling radius (&#181;m):</td><td id="proxCutoff"></td></tr>
+		-->
+		
 			<tr><td class="tableTitle">Cell count:</td><td id="cellCount"></td></tr>
 			<tr><td class="tableTitle">Mean density (mm<sup>-2</sup>):</td><td id="meanDensity"></td></tr>
 			<tr><td class="tableTitle">Effective radius (&#181;m):</td><td id="effectiveRadius"> </td></tr>
@@ -264,6 +271,11 @@
 		calcHist();
 	}
 
+	function samplingRadiusChanged() {
+		proxCutoff = +document.getElementById('samplingRadius').value
+		calcHist();
+	}
+
 	function updateHistSvg() {
 		histSvg = document.getElementById('histSvg');
 		var barGroup = histSvg.getElementById('barGroup');
@@ -329,7 +341,9 @@
 		binSlider.min = 1;
 		binSlider.value = binWidth;
 
-		document.getElementById("proxCutoff").innerHTML = proxCutoff;
+		document.getElementById('samplingRadius').value = proxCutoff;
+
+		//document.getElementById("proxCutoff").innerHTML = proxCutoff;
 		document.getElementById("cellCount").innerHTML = regionPoints;
 		document.getElementById("meanDensity").innerHTML = (regionDensity * 1e6).toFixed(2);		
 		document.getElementById("effectiveRadius").innerHTML = effectiveRadius.toFixed(2);
